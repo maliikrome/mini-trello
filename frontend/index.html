@@ -1,0 +1,125 @@
+<!Doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Trello</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header class="header">
+        <h1>Mini Trello</h1>
+        <button id="add-task-btn"> Add Task</button>
+
+    </header>
+    <dialog id="dialog">
+        <h2 id="dialog-title">Add Task</h2>
+        <form id="task-form">
+            <div class="tab">
+                <label for="task-title">Task Title:</label>
+                <input type="text" id="task-title" name="task-title" class="input-fields" required>
+            </div>
+            <div class="tab">
+                <label for="task-description">Description:</label>
+                <textarea id="task-description" name="task-description" width="20" required></textarea>
+            </div>
+            <div class="priority-category-box">
+                <div class="tab">
+                    <label for="task-priority">Priority</label>
+                    <select id="task-priority" name="task-priority" class="stratum" required>
+                        <option value="" disabled selected>--Choose Priority--</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <div class="tab">
+                    <label for="task-category">Category</label>
+                    <select id="task-category" name="task-category" class="stratum" required>
+                        <option value="" disabled selected>--Choose Category--</option>
+                        <option value="Work">Work</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Health">Health</option>
+                        <option value="Learning">Learning</option>
+                    </select>
+                </div>
+            </div>
+            <div class="tab">
+                <label for="due-date">Due Date:</label>
+                <input type="date" id="due-date" name="due-date" required class="input-fields">
+            </div>
+            <div id="comment-section">
+
+                <h3>Comments</h3>
+
+                <div id="comments-list">
+                    <!-- Existing comments will appear here -->
+                </div>
+
+                <h4 id="comment-heading">Add comment</h4>
+
+                <textarea
+                    id="comment-input"
+                    placeholder="Write a comment..."
+                ></textarea>
+
+            </div>
+            <div class="form-buttons">
+                <button type="button" class="cancel-button" id="cancel-button">Cancel</button>
+                <button type="submit" class="save-button" id="save-button">Save</button>
+            </div>
+        </form>
+    </dialog>
+
+
+    <main class="board">
+
+<template id="task-card-template">
+    <div class="task-card">
+        <h3 class="task-title"></h3>
+        <p class="task-description"></p>
+
+        <div class="task-details">
+            <span class="task-priority"></span>
+            <span class="task-category"></span>
+        </div>
+
+        <p class="due-date"></p>
+
+    </div>
+</template>
+
+        <section class="column" data-status="todo">
+            <div class="column-header">
+                <h2>To Do</h2>
+                <span class="count">0</span>
+            </div>
+            <div class="column-content" id="todo-list"></div>
+
+        </section>
+        <section class="column" data-status="in_progress">
+            <div class="column-header">
+                <h2>In Progress</h2>
+                <span class="count">0</span>
+            </div>
+            <div class="column-content" id="in-progress-column">
+            </div>
+        </section>
+        <section class="column" data-status="done">
+            <div class="column-header">
+                <h2>Done</h2>
+                <span class="count">0</span>
+            </div>
+            <div class="column-content" id="done-column">
+            </div>
+        </section>
+    </main>
+
+    <script src="main.js"></script>
+</body>
+
+</html>
