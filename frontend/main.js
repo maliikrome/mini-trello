@@ -67,34 +67,7 @@ async function getTasks() {
 
     return savedTasks;
 }
-// POST a new comment
-async function saveComment(taskId, text) {
 
-    const response = await fetch(
-        "http://127.0.0.1:8000/api/comments/",
-        {
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-                task: taskId,
-                text: text
-            })
-        }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-        console.log("Django rejected the comment:", data);
-        throw new Error("Failed to save comment");
-    }
-
-    return data;
-}
 async function loadTasks() {
 
     try {
@@ -149,26 +122,17 @@ async function deleteTask(taskId) {
         throw new Error("Failed to delete task");
     }
 }
-// GET comments belonging to a particular task
-async function getComments(taskId) {
 
-    const response = await fetch(
-        `http://127.0.0.1:8000/api/comments/?task=${taskId}`
-    );
-
-    if (!response.ok) {
-        throw new Error("Failed to retrieve comments");
-    }
-
-    const comments = await response.json();
-
-    return comments;
-}
-async function openEditDialog(taskId) {
+function openEditDialog(taskId) {
 
     const task = tasks.find(function(item) {
         return item.id === taskId;
     });
+
+    if (!task) {
+        console.error("Task not found:", taskId);
+        return;
+    }
 
     editingTaskId = taskId;
 
@@ -179,56 +143,45 @@ async function openEditDialog(taskId) {
     document.getElementById("task-category").value = task.category;
     document.getElementById("due-date").value = task.due_date;
 
-    // Set dialog heading and button
+    // Change dialog heading and button
     document.getElementById("dialog-title").textContent = "Edit Task";
     document.getElementById("save-button").textContent = "Update";
 
-    // Clear previous comment information
+    // Display existing comments
+    const comments = task.comments || [];
     const commentsList = document.getElementById("comments-list");
-    commentsList.innerHTML = "";
 
-    document.getElementById("comment-input").value = "";
+    //commentsList.innerHTML = "";
 
-    try {
+    if (comments.length > 0) {
 
-        // Fetch comments BEFORE opening the dialog
-        const comments = await getComments(taskId);
+        comments.forEach(function(comment) {
 
-        // Display comments
-        if (comments.length > 0) {
+            const commentElement = document.createElement("p");
 
-            comments.forEach(function(comment) {
+            commentElement.className = "comment-item";
+            commentElement.textContent = comment.text;
 
-                const commentElement = document.createElement("p");
-                commentElement.className = "comment-item";
-                commentElement.textContent = comment.text;
+            commentsList.appendChild(commentElement);
 
-                commentsList.appendChild(commentElement);
+        });
 
-            });
+    } else {
 
-        } else {
+        commentsList.textContent = "No comments yet.";
 
-            commentsList.textContent = "No comments yet.";
-
-        }
-
-        // Set the correct heading
-        updateCommentHeading(comments);
-
-    } catch (error) {
-
-        console.error("Error loading comments:", error);
-
-        commentsList.textContent = "Could not load comments.";
-
-        document.getElementById("comment-heading").textContent = "Add comment";
     }
 
-    // Show the comment section
+    // Update comment heading
+    updateCommentHeading(comments);
+
+    // Clear the new comment textarea
+    document.getElementById("comment-input").value = "";
+
+    // Show comments section
     document.getElementById("comment-section").style.display = "block";
 
-    // Open the dialog only after comments are ready
+    // Open dialog
     dialog.showModal();
 }
 function updateCommentHeading(comments) {
@@ -240,6 +193,7 @@ function updateCommentHeading(comments) {
         commentHeading.textContent = "Add another comment";
     }
 }
+
 
 // 6. Display tasks on the board
 function renderTasks() {
@@ -405,7 +359,7 @@ document.querySelectorAll(".column").forEach(function (column) {
 //This part handles form submission
 // function delays the execution of the function until user submits
 // This part handles form submission
-taskform.addEventListener("submit", async function (event){
+taskform.addEventListener("submit", async function(event) {
 
     event.preventDefault();
 
@@ -415,9 +369,9 @@ taskform.addEventListener("submit", async function (event){
     const category = document.getElementById("task-category").value;
     const due_date = document.getElementById("due-date").value;
 
+    // ADD NEW TASK
     if (editingTaskId === null) {
 
-        // Create a new task object
         const task = {
             title: title,
             description: desc,
@@ -429,16 +383,15 @@ taskform.addEventListener("submit", async function (event){
 
         try {
 
-            // Send the task to Django and wait for its response
             const savedTask = await saveTasks(task);
 
-            // Add the task returned by Django to our array
             tasks.push(savedTask);
 
-            // Close and reset the form
             taskform.reset();
             dialog.close();
+
             renderTasks();
+
         } catch (error) {
 
             console.error("Error saving task:", error);
@@ -446,70 +399,69 @@ taskform.addEventListener("submit", async function (event){
 
         }
 
-} else {
+    }
 
-    const updatedData = {
-        title: title,
-        description: desc,
-        priority: priority.toLowerCase(),
-        category: category,
-        due_date: due_date
-    };
+    // UPDATE EXISTING TASK
+    else {
 
-    // Get the comment written by the user
-    const commentText = document.getElementById("comment-input").value.trim();
+        const commentText = document.getElementById("comment-input").value.trim();
 
-    try {
+        const updatedData = {
+            title: title,
+            description: desc,
+            priority: priority.toLowerCase(),
+            category: category,
+            due_date: due_date,
+            comments: commentText !== "" ? [{ text: commentText }] : []
+        };
 
-        // First, update the task
-        const updatedTask = await updateTask(editingTaskId, updatedData);
+        try {
 
-        // Find the updated task in our array
-        const index = tasks.findIndex(function(item) {
-            return item.id === editingTaskId;
-        });
+            const updatedTask = await updateTask(editingTaskId, updatedData);
 
-        tasks[index] = updatedTask;
+            const index = tasks.findIndex(function(item) {
+                return item.id === editingTaskId;
+            });
 
-        // Save a new comment only if the user wrote something
-        if (commentText !== "") {
+            tasks[index] = updatedTask;
 
-            await saveComment(editingTaskId, commentText);
+            renderTasks();
+
+            taskform.reset();
+            dialog.close();
+            editingTaskId = null;
+
+        } catch (error) {
+
+            console.error("Error updating task:", error);
+            alert("Could not update task. Please try again.");
 
         }
 
-        // Update the board
-        renderTasks();
-
-        // Reset and close the form
-        taskform.reset();
-        dialog.close();
-        editingTaskId = null;
-
-    } catch (error) {
-
-        console.error("Error updating task or saving comment:", error);
-
-        alert("Could not update task or save comment. Please try again.");
-
     }
 
-}
 });
 
 // 8. Open the dialog for adding a new task
-taskbtn.addEventListener("click", function () {
+taskbtn.addEventListener("click", function() {
 
     editingTaskId = null;
 
     taskform.reset();
 
+    // Hide comments when creating a new task
     document.getElementById("comment-section").style.display = "none";
 
+    // Reset dialog heading and button
     document.getElementById("dialog-title").textContent = "Add Task";
     document.getElementById("save-button").textContent = "Save";
 
+    // Clear comments
+    document.getElementById("comments-list").innerHTML = "";
+    document.getElementById("comment-input").value = "";
+
     dialog.showModal();
+
 });
 
 
